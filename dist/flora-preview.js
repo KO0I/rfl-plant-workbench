@@ -1,0 +1,49 @@
+import {impostorGLSL,captureBasis,unit} from './octahedral-impostor.js';
+import {createFloraGeometry,meshDiagnostics,seededRandom} from './faceted-flora.js';
+const vs=`#version 300 es
+precision highp float;
+in vec3 aPosition,aNormal;in vec4 aColor;
+uniform vec3 uRight,uUp,uDirection,uCenter,uEye,uOffset,uOctCenter;
+uniform float uSpan,uAspect,uImpostor,uOctRadius;
+out vec3 vModel,vNormal,vOctDirection;out vec4 vColor;out mat3 vOctModel;
+void main(){vec3 p=aPosition+uOffset;if(uImpostor>1.5)p=uOctCenter+(uRight*aPosition.x+uUp*aPosition.y)*uOctRadius;
+vModel=p;vNormal=aNormal;vColor=aColor;vOctDirection=uEye-p;vOctModel=mat3(1.);vec3 q=p-uCenter;
+gl_Position=vec4(dot(q,uRight)/(uSpan*uAspect),dot(q,uUp)/uSpan,-dot(q,uDirection)/(uSpan*30.),1.);}`;
+const fs=`#version 300 es
+precision highp float;
+in vec3 vModel,vNormal;in vec4 vColor;uniform float uImpostor;uniform vec3 uLight;out vec4 outColor;
+${impostorGLSL}
+void main(){vec4 p=vColor;vec3 n=normalize(vNormal);if(uImpostor>1.5)octSurface(p,n);outColor=vec4(p.rgb*(.36+.64*max(0.,dot(n,normalize(uLight)))),1.);}`;
+export const floraPreviewShaders={vertex:vs,fragment:fs};
+export function createFloraPreview(canvas){
+ const gl=canvas.getContext('webgl2',{antialias:true,alpha:true});if(!gl)return createSoftwarePreview(canvas);
+ const program=gl.createProgram();for(const [type,source] of [[gl.VERTEX_SHADER,vs],[gl.FRAGMENT_SHADER,fs]]){const s=gl.createShader(type);gl.shaderSource(s,source);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw Error(gl.getShaderInfoLog(s));gl.attachShader(program,s);gl.deleteShader(s);}gl.linkProgram(program);if(!gl.getProgramParameter(program,gl.LINK_STATUS))throw Error(gl.getProgramInfoLog(program));
+ const buffer=gl.createBuffer(),textures=[],quad=new Float32Array([-1,-1,1,-1,1,1,-1,-1,1,1,-1,1].flatMap((_,i,a)=>i%2?[]:[a[i],a[i+1],0,0,0,1,1,1,1,0]));let mesh,capture,settings={};
+ function uniform(name,v){const p=gl.getUniformLocation(program,name);if(Array.isArray(v))gl.uniform3fv(p,v);else gl.uniform1f(p,v);}
+ function texture(bytes,p){const tex=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D_ARRAY,tex);for(const [i,l] of p.levels.entries())gl.texImage3D(gl.TEXTURE_2D_ARRAY,i,gl.RGBA8,l.size,l.size,p.layers,0,gl.RGBA,gl.UNSIGNED_BYTE,bytes.subarray(l.offset,l.offset+l.length));gl.texParameteri(gl.TEXTURE_2D_ARRAY,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR);gl.texParameteri(gl.TEXTURE_2D_ARRAY,gl.TEXTURE_MAG_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D_ARRAY,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D_ARRAY,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);return tex;}
+ function setCapture(p){for(const t of textures)gl.deleteTexture(t);textures.length=0;capture=p;if(p)textures.push(texture(p.color,p),texture(p.normalDepth,p));}
+ function drawBuffer(vertices,mode=gl.TRIANGLES,offset=[0,0,0]){uniform('uOffset',offset);gl.bindBuffer(gl.ARRAY_BUFFER,buffer);gl.bufferData(gl.ARRAY_BUFFER,vertices,gl.DYNAMIC_DRAW);for(const [name,size,offset] of [['aPosition',3,0],['aNormal',3,3],['aColor',4,6]]){const loc=gl.getAttribLocation(program,name);gl.enableVertexAttribArray(loc);gl.vertexAttribPointer(loc,size,gl.FLOAT,false,40,offset*4);}gl.drawArrays(mode,0,vertices.length/10);}
+ function draw(){if(!mesh)return;const {yaw=35,pitch=15,zoom=1,light=-35,reference='line',representation='mesh'}=settings,dpr=Math.min(devicePixelRatio||1,2),w=Math.round(canvas.clientWidth*dpr),h=Math.round(canvas.clientHeight*dpr);if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h;}gl.viewport(0,0,w,h);gl.clearColor(0,0,0,0);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);gl.useProgram(program);gl.enable(gl.DEPTH_TEST);gl.disable(gl.CULL_FACE);
+  const diag=meshDiagnostics(mesh),height=Math.max(2.2,diag.dimensions[1]),rad=Math.PI/180,d=unit([Math.sin(yaw*rad)*Math.cos(pitch*rad),Math.sin(pitch*rad),Math.cos(yaw*rad)*Math.cos(pitch*rad)]),basis=captureBasis(d),community=representation==='community',span=Math.max(height*.72,diag.dimensions[0]*.7)*(community?3:1)/zoom,center=[0,height*.45,0];
+  uniform('uRight',basis.right);uniform('uUp',basis.up);uniform('uDirection',d);uniform('uCenter',center);uniform('uEye',center.map((x,k)=>x+d[k]*10000));uniform('uSpan',span);uniform('uAspect',w/h);uniform('uLight',[Math.sin(light*rad),.8,Math.cos(light*rad)]);uniform('uImpostor',0);
+  const grid=[];for(let x=-10;x<=10;x++){for(const p of [[x,0,-10],[x,0,10],[-10,0,x],[10,0,x]])grid.push(...p,0,1,0,.25,.34,.25,0);}drawBuffer(new Float32Array(grid),gl.LINES);
+  if(representation==='impostor'&&capture){uniform('uImpostor',2);uniform('uOctCenter',capture.center);uniform('uOctRadius',capture.radius);uniform('uOctGrid',capture.grid);uniform('uOctHemisphere',capture.sampling==='hemisphere'?1:0);textures.forEach((t,i)=>{gl.activeTexture(gl.TEXTURE0+i);gl.bindTexture(gl.TEXTURE_2D_ARRAY,t);gl.uniform1i(gl.getUniformLocation(program,i?'uOctNormalDepth':'uOctColor'),i);});drawBuffer(quad);uniform('uImpostor',0);}else if(community){const rng=seededRandom(29);for(let i=0;i<18;i++)drawBuffer(mesh.vertices,gl.TRIANGLES,[(rng()-.5)*height*4,0,(rng()-.5)*height*4]);}else drawBuffer(mesh.vertices);
+  if(reference!=='none'){const x=diag.bounds.max[0]+.65,g=createFloraGeometry();if(reference==='figure'){g.branch([x,1,0],[x,1.65,0],.18,.22,[.13,.18,.17]);g.clump([x,1.84,0],.22,[.13,.18,.17]);for(const side of [-1,1]){g.branch([x+side*.09,.95,0],[x+side*.15,0,0],.09,.06,[.13,.18,.17]);g.branch([x+side*.2,1.5,0],[x+side*.31,.9,0],.07,.05,[.13,.18,.17]);}const human=g.finish(),hd=meshDiagnostics(human);for(let i=1;i<human.vertices.length;i+=10)human.vertices[i]*=2/hd.bounds.max[1];drawBuffer(human.vertices);}else{const vertices=[];for(const p of [[x,0,0],[x,2,0],[x-.1,0,0],[x+.1,0,0],[x-.1,2,0],[x+.1,2,0]])vertices.push(...p,0,1,0,.4,1,.05,0);drawBuffer(new Float32Array(vertices),gl.LINES);}}
+  const error=gl.getError();if(error)throw Error('Preview WebGL error '+error);
+ }
+ return {mode:'webgl2',setMesh(value){mesh=value;draw();},setCapture,setSettings(value){settings={...settings,...value};draw();},draw,dispose(){for(const t of textures)gl.deleteTexture(t);gl.deleteBuffer(buffer);gl.deleteProgram(program);}};
+}
+// Graceful authoring fallback when the host disables WebGL. This projects the
+// same triangle data; it does not pretend to render octahedral captures.
+function createSoftwarePreview(canvas){
+ const ctx=canvas.getContext('2d');if(!ctx)throw Error('Neither WebGL nor canvas rendering is available');let mesh,settings={};
+ function draw(){if(!mesh)return;const {yaw=35,pitch=15,zoom=1,light=-35,reference='line',representation='mesh'}=settings,ratio=Math.min(devicePixelRatio||1,2);canvas.width=Math.round(canvas.clientWidth*ratio);canvas.height=Math.round(canvas.clientHeight*ratio);const w=canvas.width,h=canvas.height,diag=meshDiagnostics(mesh),height=Math.max(2.2,diag.dimensions[1]),rad=Math.PI/180,d=unit([Math.sin(yaw*rad)*Math.cos(pitch*rad),Math.sin(pitch*rad),Math.cos(yaw*rad)*Math.cos(pitch*rad)]),basis=captureBasis(d),community=representation==='community',span=Math.max(height*.72,diag.dimensions[0]*.7)*(community?3:1)/zoom,scale=h/(2*span),center=[0,height*.45,0],lightDir=unit([Math.sin(light*rad),.8,Math.cos(light*rad)]),dot=(a,b)=>a.reduce((n,x,k)=>n+x*b[k],0);
+  const project=p=>{const q=p.map((x,k)=>x-center[k]);return [w/2+dot(q,basis.right)*scale,h/2-dot(q,basis.up)*scale,dot(q,d)];};
+  ctx.clearRect(0,0,w,h);ctx.strokeStyle='#81907455';ctx.lineWidth=ratio;for(let x=-10;x<=10;x++){for(const pair of [[[x,0,-10],[x,0,10]],[[-10,0,x],[10,0,x]]]){const [a,b]=pair.map(project);ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);ctx.stroke();}}
+  const tris=[],rng=seededRandom(29);for(let n=0;n<(community?18:1);n++){const offset=community?[(rng()-.5)*height*4,0,(rng()-.5)*height*4]:[0,0,0],v=mesh.vertices;for(let i=0;i<v.length;i+=30){const points=[0,10,20].map(j=>project([0,1,2].map(k=>v[i+j+k]+offset[k]))),brightness=.36+.64*Math.max(0,dot(Array.from(v.slice(i+3,i+6)),lightDir));tris.push({points,z:points.reduce((n,p)=>n+p[2],0),color:'rgb('+[0,1,2].map(k=>Math.round(v[i+6+k]*brightness*255)).join(',')+')'});}}
+  tris.sort((a,b)=>a.z-b.z);for(const t of tris){ctx.fillStyle=t.color;ctx.beginPath();t.points.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.closePath();ctx.fill();}
+  if(reference!=='none'){const x=diag.bounds.max[0]+.65;ctx.strokeStyle=reference==='line'?'#9dff41':'#172b23';ctx.lineWidth=reference==='line'?ratio:7*ratio;const lines=reference==='line'?[[[x,0,0],[x,2,0]],[[x-.1,0,0],[x+.1,0,0]],[[x-.1,2,0],[x+.1,2,0]]]:[[[x,1,0],[x,1.7,0]],[[x,1,0],[x-.17,0,0]],[[x,1,0],[x+.17,0,0]],[[x-.3,.9,0],[x,1.6,0]],[[x+.3,.9,0],[x,1.6,0]]];for(const pair of lines){const [a,b]=pair.map(project);ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);ctx.stroke();}if(reference==='figure'){const p=project([x,1.85,0]);ctx.fillStyle='#172b23';ctx.beginPath();ctx.arc(p[0],p[1],.15*scale,0,Math.PI*2);ctx.fill();}}
+  ctx.font=11*ratio+'px monospace';ctx.fillStyle='#e2e8d4';ctx.fillText('SOFTWARE MESH PREVIEW · WEBGL UNAVAILABLE',18*ratio,h-38*ratio);
+ }
+ return {mode:'software',setMesh(value){mesh=value;draw();},setCapture(p){if(p)throw Error('Impostor preview requires WebGL 2; mesh authoring remains available');},setSettings(value){settings={...settings,...value};draw();},draw,dispose(){}};
+}

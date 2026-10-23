@@ -1,0 +1,114 @@
+{
+  "format": "rfl-impostor-index",
+  "version": 1,
+  "models": [
+    {
+      "id": "nauptre-bushes-0",
+      "group": "nauptre-bushes",
+      "height": 0.75,
+      "meshHash": "eccf9608f98b3c5437379fef762c8e58c947bd37af3ae020c6e02fb5ed05f997",
+      "bakeKey": "c00ef4fb2461039952abbd0ba18956e5072281193957f46c35c0d6977987083f",
+      "url": "nauptre-bushes-0-e7a0d17b62ce8c8cbe6f/manifest.json",
+      "mesh": "nauptre-bushes-0-e7a0d17b62ce8c8cbe6f/mesh.json"
+    },
+    {
+      "id": "nauptre-bushes-1",
+      "group": "nauptre-bushes",
+      "height": 0.91,
+      "meshHash": "eccf9608f98b3c5437379fef762c8e58c947bd37af3ae020c6e02fb5ed05f997",
+      "bakeKey": "a6f25739ab54ef5c0916e988a72cfa6dbdad7544706f3465eae4692f5ebad61c",
+      "url": "nauptre-bushes-1-e96e2242b47c607d5fe1/manifest.json",
+      "mesh": "nauptre-bushes-1-e96e2242b47c607d5fe1/mesh.json"
+    },
+    {
+      "id": "nauptre-bushes-2",
+      "group": "nauptre-bushes",
+      "height": 1.07,
+      "meshHash": "eccf9608f98b3c5437379fef762c8e58c947bd37af3ae020c6e02fb5ed05f997",
+      "bakeKey": "f0509d98d4176bcd202ff63f473241e0303fdc17fc3c0f14962632fbaeb1748c",
+      "url": "nauptre-bushes-2-1cb563e7f35023ee9438/manifest.json",
+      "mesh": "nauptre-bushes-2-1cb563e7f35023ee9438/mesh.json"
+    },
+    {
+      "id": "nauptre-cacti-0",
+      "group": "nauptre-cacti",
+      "height": 3.4,
+      "meshHash": "63dcb0e41f2d340907caa6c4747384d9a0069d9dba91243b1f2eaac8d715b652",
+      "bakeKey": "d67508f5abd48a8c96cde710ab0c7491533f125ca98a823aa81b159afe5592db",
+      "url": "nauptre-cacti-0-a4aa085129e4b52b9546/manifest.json",
+      "mesh": "nauptre-cacti-0-a4aa085129e4b52b9546/mesh.json"
+    },
+    {
+      "id": "nauptre-cacti-1",
+      "group": "nauptre-cacti",
+      "height": 4.05,
+      "meshHash": "b2ca2570aabff96ce6277d2a37fbe40f2441cb6e2cd1131efb35a4adade97187",
+      "bakeKey": "03259927e88e24e5f22ec4e9336f10823a41a8b2ff628d02508b6e9ba43a3dd3",
+      "url": "nauptre-cacti-1-b733587238cc28d6593c/manifest.json",
+      "mesh": "nauptre-cacti-1-b733587238cc28d6593c/mesh.json"
+    },
+    {
+      "id": "nauptre-cacti-2",
+      "group": "nauptre-cacti",
+      "height": 4.7,
+      "meshHash": "e1fe3388f2c905fb561d7acdbd017c73966f9532f99b75ca22c734616cc5dc3a",
+      "bakeKey": "1d68d4fa8ac4ad1bde6453307695b75761bd63ab53ede31e0632ffdac93d2ab0",
+      "url": "nauptre-cacti-2-617f1c7e2c661f5a28d6/manifest.json",
+      "mesh": "nauptre-cacti-2-617f1c7e2c661f5a28d6/mesh.json"
+    },
+    {
+      "id": "nauptre-cacti-3",
+      "group": "nauptre-cacti",
+      "height": 3.4,
+      "meshHash": "6e1c9901707edb3f548baa1becaa29003487b1b6dd0162768027cef6035d3afb",
+      "bakeKey": "0a3dde55b24b24a678051f4be8055851b987bcf4665be875566c417057e981b5",
+      "url": "nauptre-cacti-3-9b2ed11a62d2563da26e/manifest.json",
+      "mesh": "nauptre-cacti-3-9b2ed11a62d2563da26e/mesh.json"
+    },
+    {
+      "id": "nauptre-cacti-4",
+      "group": "nauptre-cacti",
+      "height": 4.05,
+      "meshHash": "09ede80c95b7094e879eb2973dcf7f7f64a91e44d54bb65cfbc02211db61f307",
+      "bakeKey": "9d0294ba093e1721a93ebc7adbb5501061f4400b95ddeff2adfde7f1fc29abdd",
+      "url": "nauptre-cacti-4-dbd25133668d6c707be3/manifest.json",
+      "mesh": "nauptre-cacti-4-dbd25133668d6c707be3/mesh.json"
+    },
+    {
+      "id": "nauptre-cacti-5",
+      "group": "nauptre-cacti",
+      "height": 4.7,
+      "meshHash": "281e4be77a718657f6706882a3b85bd0bb70cf16ad556f25cd3ebbc3fe406133",
+      "bakeKey": "3b1b5f743c07d08aed827f0ebd3fd46e5f9d56fd34f90f86a317abf39e739095",
+      "url": "nauptre-cacti-5-a10dcd122c77f4cf99f5/manifest.json",
+      "mesh": "nauptre-cacti-5-a10dcd122c77f4cf99f5/mesh.json"
+    },
+    {
+      "id": "nauptre-joshua-0",
+      "group": "nauptre-joshua",
+      "height": 2.3,
+      "meshHash": "f790f601d8a61621de632d6fb4bf8060a5cc6fef2b287955afc2d39ec2c88ee1",
+      "bakeKey": "d931de2d8973da207a1d59bf6bc8db577594b64f214732c49221c888742113e0",
+      "url": "nauptre-joshua-0-0945bb63cb877a5614f3/manifest.json",
+      "mesh": "nauptre-joshua-0-0945bb63cb877a5614f3/mesh.json"
+    },
+    {
+      "id": "nauptre-joshua-1",
+      "group": "nauptre-joshua",
+      "height": 2.65,
+      "meshHash": "3ec0228a344a20e9675152241c62382266fce527a2024f92e91d8fde6135d355",
+      "bakeKey": "5d78d6926ed36ba80e044cd69d023049569f8ab126032f4b9b6496e3d34cff9f",
+      "url": "nauptre-joshua-1-bc69a4ce4c8af9094248/manifest.json",
+      "mesh": "nauptre-joshua-1-bc69a4ce4c8af9094248/mesh.json"
+    },
+    {
+      "id": "nauptre-joshua-2",
+      "group": "nauptre-joshua",
+      "height": 3,
+      "meshHash": "c7928e4a84466f52207f95f0aa7170ea2a7a5ac3385e48bf7cec02c4a75734c6",
+      "bakeKey": "db883b114ab8bbbb594350ab03370369eec70e43bbfffcd29daf36765ad5b7f0",
+      "url": "nauptre-joshua-2-acaaa0c2b8a923298b2c/manifest.json",
+      "mesh": "nauptre-joshua-2-acaaa0c2b8a923298b2c/mesh.json"
+    }
+  ]
+}
