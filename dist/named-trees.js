@@ -2,12 +2,16 @@
 import {createFloraGeometry,seededRandom,meshDiagnostics} from './faceted-flora.js';
 import {foliageGeometry} from './interiors-foliage.mjs';
 export const NAMED_TREES=['acacia','oak','aspen','ash','apple','peach','coconut','banana','pear'];
-export function generateNamedTree(form,seed,palette){
+export function generateNamedTree(form,seed,palette,{trunkSpines=false}={}){
  const rng=seededRandom(seed),wood=createFloraGeometry(seed),leaves=createFloraGeometry(seed),crowns=[],groups=[],bladeGroups=[],produceAnchors=[];
  const rand=(a,b)=>a+(b-a)*rng(),add=(p,q)=>p.map((v,k)=>v+q[k]),polar=(a,r,y)=>[Math.cos(a)*r,y,Math.sin(a)*r],mix=(a,b,t)=>a.map((v,k)=>v+(b[k]-v)*t),phase=rand(0,6.283);
  const limb=(a,b,r,s)=>wood.branch(a,b,r,s,palette.bark,7);
  function cluster(p,s){const start=crowns.length,color=palette.leaf.map(v=>v*rand(.88,1.12));foliageGeometry(p,s,color,(a,b,c,col,kind,alpha,normals)=>{for(const [i,q]of[a,b,c].entries())crowns.push(...q,...normals[i],...col,1);});groups.push([start,crowns.length]);}
- function trunk(h,r,lean){const at=t=>polar(phase,lean*t*t,h*t);for(let i=0;i<10;i++)limb(at(i/10),at((i+1)/10),r*(1-.76*i/10),r*(1-.76*(i+1)/10));return at;}
+ function trunk(h,r,lean){const at=t=>polar(phase,lean*t*t,h*t);for(let i=0;i<10;i++)limb(at(i/10),at((i+1)/10),r*(1-.76*i/10),r*(1-.76*(i+1)/10));if(trunkSpines)for(let j=0;j<24;j++){
+ const t=.08+j*.034,a=phase+j*2.399,radius=r*(1-.76*t),p=add(at(t),polar(a,radius*.85,0));
+ const tip=add(p,polar(a,.10+(j%4)*.025,.035));
+ wood.branch(p,tip,.018,.0008,[.62,.53,.36],4);
+ }return at;}
  const anchor=(p,size=.19)=>produceAnchors.push({position:[...p],size});
  let bladeOffset=0;
  function twigLeaves(p,a,length,width){for(let j=0;j<5;j++){const base=add(p,polar(a,length*j/5,j*.035));for(const side of[-1,1]){leaves.leaf(base,add(base,polar(a+side*.85,width,rand(-.05,.12))),width*.38,.035,palette.leaf);bladeGroups.push([bladeOffset,bladeOffset+120]);bladeOffset+=120;}}}
