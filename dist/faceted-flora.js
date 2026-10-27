@@ -7,7 +7,7 @@ export {add as floraAdd};
 export function seededRandom(seed){let state=seed>>>0;return()=>{state=(state+0x6D2B79F5)>>>0;let t=state;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return ((t^(t>>>14))>>>0)/4294967296;};}
 export function createFloraGeometry(variant=0){
  const vertices=[];
- const tri=(a,b,c,color)=>{const n=norm(cross(sub(b,a),sub(c,a)));for(const p of [a,b,c])vertices.push(...p,...n,...color,0);};
+ const tri=(a,b,c,color,material=0)=>{const n=norm(cross(sub(b,a),sub(c,a)));for(const p of [a,b,c])vertices.push(...p,...n,...color,material);};
  function branch(a,b,r0,r1,color,sides=5){
   const axis=norm(sub(b,a)),right=norm(cross(axis,Math.abs(axis[1])>.9?[1,0,0]:[0,1,0])),depth=cross(axis,right);
   const ring=(p,r,i)=>add(p,add(mul(right,Math.cos(i*2*Math.PI/sides)*r),mul(depth,Math.sin(i*2*Math.PI/sides)*r)));
@@ -16,9 +16,9 @@ export function createFloraGeometry(variant=0){
  function crown(p,r,color){
   for(let i=0;i<6;i++){const a=i*2*Math.PI/6+variant*.4,d=[Math.cos(a),0,Math.sin(a)],side=[-d[2]*r*.16,0,d[0]*r*.16],tip=add(p,[d[0]*r,r*(i%3===0?.9:.22),d[2]*r]);const A=sub(p,side),B=add(p,side);tri(A,B,tip,color);tri(B,A,tip,color);}
  }
- function clump(p,r,color){
+ function clump(p,r,color,material=0){
   const top=add(p,[0,r*.7,0]),bottom=sub(p,[0,r*.7,0]);
-  for(let i=0;i<4;i++){const a=i*Math.PI/2,b=(i+1)*Math.PI/2,A=add(p,[Math.cos(a)*r,0,Math.sin(a)*r]),B=add(p,[Math.cos(b)*r,0,Math.sin(b)*r]);tri(top,B,A,color.map(c=>c*(.8+i*.08)));tri(bottom,A,B,color);}
+  for(let i=0;i<4;i++){const a=i*Math.PI/2,b=(i+1)*Math.PI/2,A=add(p,[Math.cos(a)*r,0,Math.sin(a)*r]),B=add(p,[Math.cos(b)*r,0,Math.sin(b)*r]);tri(top,B,A,color.map(c=>c*(.8+i*.08)),material);tri(bottom,A,B,color,material);}
  }
  function leaf(base,tip,width,fold,color){
   const axis=norm(sub(tip,base)),side=mul(norm(cross(axis,Math.abs(axis[1])>.95?[1,0,0]:[0,1,0])),width/2);
@@ -42,12 +42,13 @@ export function meshDiagnostics(mesh){
 export function growFlora(recipe,seed=0,palette={bark:[.27,.23,.30],leaf:[.27,.40,.37],flower:[.98,.34,.62]}){
  const {height=3,spread=.6,depth=2,forks=3,taper=.65,foliage=1,flowers=0}=recipe;
  if(![height,spread,depth,forks,taper,foliage,flowers].every(Number.isFinite)||height<=0||height>200||spread<=0||spread>5||!Number.isInteger(depth)||depth<0||depth>4||!Number.isInteger(forks)||forks<1||forks>5||taper<=0||taper>=1||foliage<0||foliage>3||flowers<0||flowers>1)throw Error('Growth recipe exceeds bounded authoring limits');
- const random=seededRandom(seed),g=createFloraGeometry(seed%16);
- function grow(a,b,r,level){g.branch(a,b,r,r*taper,palette.bark);if(!level){if(foliage)g.clump(b,height*.12*foliage,palette.leaf);if(flowers&&random()<flowers)g.crown(add(b,[0,height*.08,0]),height*.07,palette.flower);return;}
+ const random=seededRandom(seed),g=createFloraGeometry(seed%16),produceAnchors=[];
+ function grow(a,b,r,level){g.branch(a,b,r,r*taper,palette.bark);if(!level){produceAnchors.push({position:[...b],size:height*.035});if(foliage)g.clump(b,height*.12*foliage,palette.leaf,1);if(flowers&&random()<flowers)g.crown(add(b,[0,height*.08,0]),height*.07,palette.flower);return;}
   for(let i=0;i<forks;i++){const angle=i*2*Math.PI/forks+random()*.8,len=height*.32*Math.pow(taper,depth-level),tip=add(b,[Math.cos(angle)*len*spread,len*(.65+random()*.35),Math.sin(angle)*len*spread]);grow(b,tip,r*taper,level-1);}}
  grow([0,0,0],[0,height*.42,0],height*.035,depth);
  const mesh=g.finish(),bounds=meshDiagnostics(mesh);const scale=height/bounds.dimensions[1];
  // A recipe height is exact; normalize once during authoring, never per planet.
  for(let i=0;i<mesh.vertices.length;i+=10)for(let k=0;k<3;k++)mesh.vertices[i+k]=(mesh.vertices[i+k]-(k===1?bounds.bounds.min[1]:0))*scale;
+ mesh.produceAnchors=produceAnchors.map(a=>({position:a.position.map((v,k)=>(v-(k===1?bounds.bounds.min[1]:0))*scale),size:a.size*scale}));
  return mesh;
 }

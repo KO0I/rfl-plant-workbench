@@ -1,7 +1,7 @@
 // Small flat-shaded solids, retained as meshes through the distance fade.
 import {floraAdd as add,createFloraGeometry} from './faceted-flora.js';
-export function nauptreFlora(group){return (group==='nauptre-cacti'?[0,1,2,3,4,5]:[0,1,2]).map(variant=>{
- const geometry=createFloraGeometry(variant),{tri,branch,crown,clump}=geometry;
+export function nauptreFlora(group,{flowers=true}={}){return (group==='nauptre-cacti'?[0,1,2,3,4,5]:[0,1,2]).map(variant=>{
+ const produceAnchors=[],geometry=createFloraGeometry(variant),{tri,branch,crown,clump}=geometry;
  const cactus=[.13,.31,.30],bark=[.27,.23,.30],leaf=[.27,.40,.37];
  let height;
  if(group==='nauptre-cacti'){
@@ -18,8 +18,9 @@ export function nauptreFlora(group){return (group==='nauptre-cacti'?[0,1,2,3,4,5
    const tip=points.at(-1),ring=rings.at(-1);
    for(let i=0;i<5;i++)tri(tip,ring[(i+1)%5],ring[i],cactus);
    // One flower palette per entire plant; low, ragged tufts at every arm tip.
-   crown(add(tip,[0,.006,0]),radii.at(-1)*1.35,flower);
-   clump(add(tip,[0,.018,0]),radii.at(-1)*.55,flower);
+   produceAnchors.push({position:[...tip],size:radii.at(-1)*1.15,up:true});
+   if(flowers){crown(add(tip,[0,.006,0]),radii.at(-1)*1.35,flower);
+   clump(add(tip,[0,.018,0]),radii.at(-1)*.55,flower);}
   }
   stem([[0,0,0],[.035,.43,0],[.065+shape*.012,.98,0]],[.125,.14,.105]);
   stem([[-.03,.09,.015],[-.23,.38,.025],[-.37-shape*.018,.85-shape*.035,.045]],[.105,.115,.085]);
@@ -33,5 +34,5 @@ export function nauptreFlora(group){return (group==='nauptre-cacti'?[0,1,2,3,4,5
   height=.75+variant*.16;
   for(let i=0;i<5;i++){const a=i*2.4,r=.14+(i%3)*.08,tip=[Math.cos(a)*r,.36+(i%3)*.15,Math.sin(a)*r];branch([0,0,0],tip,.022,.008,bark,4);clump(tip,.24,leaf);clump(add(tip,[.03,.14,0]),.17,cactus);}
  }
- return {id:group+'-'+variant,height,mesh:geometry.finish()};
+ return {id:group+'-'+variant,height,mesh:{...geometry.finish(),produceAnchors}};
 });}
