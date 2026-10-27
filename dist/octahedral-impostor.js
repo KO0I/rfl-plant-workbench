@@ -33,7 +33,7 @@ export async function loadImpostorPackage(url,expectedHash,{fetcher=fetch,signal
 // Three independent view projections. Arrays isolate views during filtering.
 export const impostorGLSL=`
 uniform highp sampler2DArray uOctColor,uOctNormalDepth;
-uniform vec3 uOctCenter;uniform float uOctRadius,uOctGrid,uOctHemisphere;
+uniform vec3 uOctCenter;uniform float uOctRadius,uOctGrid,uOctHemisphere,uOctLodBias;
 in vec3 vOctDirection;in mat3 vOctModel;
 vec3 octDecode(vec2 uv){vec2 p=uv*2.-1.;vec3 n=vec3(p.x,1.-abs(p.x)-abs(p.y),p.y);if(n.y<0.)n.xz=(1.-abs(n.zx))*mix(vec2(-1.),vec2(1.),greaterThanEqual(n.xz,vec2(0.)));return normalize(n);}
 vec2 octEncode(vec3 n){n/=abs(n.x)+abs(n.y)+abs(n.z);vec2 p=n.xz;if(n.y<0.)p=(1.-abs(p.yx))*mix(vec2(-1.),vec2(1.),greaterThanEqual(p,vec2(0.)));return p*.5+.5;}
@@ -42,10 +42,10 @@ vec2 viewEncode(vec3 n){if(uOctHemisphere<.5)return octEncode(n);n.y=max(0.,n.y)
 void octSample(vec2 cell,vec3 point,vec3 ray,out vec4 pigment,out vec3 normal,out float emission){
  vec3 d=viewDecode(cell/(uOctGrid-1.));vec3 r=normalize(cross(abs(d.y)>.99?vec3(0,0,1):vec3(0,1,0),d)),u=cross(d,r);
  vec2 uv=vec2(dot(point,r),dot(point,u))/(2.*uOctRadius)+.5;float layer=cell.y*uOctGrid+cell.x;
- vec4 nd=texture(uOctNormalDepth,vec3(uv,layer));float depth=(nd.b*2.-1.)*uOctRadius;
+ vec4 nd=texture(uOctNormalDepth,vec3(uv,layer),uOctLodBias);float depth=(nd.b*2.-1.)*uOctRadius;
  vec3 corrected=point+ray*clamp((depth-dot(point,d))/max(.15,dot(ray,d)),-uOctRadius,uOctRadius);
  uv=vec2(dot(corrected,r),dot(corrected,u))/(2.*uOctRadius)+.5;
- pigment=texture(uOctColor,vec3(uv,layer));nd=texture(uOctNormalDepth,vec3(uv,layer));
+ pigment=texture(uOctColor,vec3(uv,layer),uOctLodBias);nd=texture(uOctNormalDepth,vec3(uv,layer),uOctLodBias);
  if(any(lessThan(uv,vec2(0.)))||any(greaterThan(uv,vec2(1.))))pigment.a=0.;
  normal=octDecode(nd.rg);emission=nd.a; // Unlit pigment; lighting stays in the surface shader.
 }

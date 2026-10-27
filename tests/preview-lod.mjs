@@ -1,0 +1,13 @@
+import assert from 'node:assert/strict';
+import {createFloraPreview} from '../dist/flora-preview.js';
+import {floraSpecies} from '../dist/flora-species.js';
+import {generateSpecies} from '../dist/flora-authoring.js';
+globalThis.devicePixelRatio=1;
+let lines=[],pixels=[];
+const ctx={clearRect(){lines=[];pixels=[];},beginPath(){},moveTo(...v){lines.push(v)},lineTo(...v){lines.push(v)},stroke(){},closePath(){},fill(){},arc(){},fillText(){},fillRect(x,y){pixels.push([x,y,this.fillStyle])}};
+const canvas={clientWidth:120,clientHeight:120,getContext:type=>type==='2d'?ctx:null};
+const preview=createFloraPreview(canvas),mesh=generateSpecies(floraSpecies.find(s=>s.id==='interiors-bush')).mesh;
+preview.setMesh(mesh);preview.setSettings({lod:0});const fine={lines:structuredClone(lines),pixels:structuredClone(pixels)};
+preview.setSettings({lod:3});assert.deepEqual(lines,fine.lines,'LOD must not change projection, grid or scale reference');assert.notDeepEqual(pixels,fine.pixels,'LOD changes foliage raster');
+preview.setSettings({yaw:90});assert.notDeepEqual(lines,fine.lines,'orbit changes projection');preview.dispose();
+console.log('Fine/coarse foliage differs while framing and reference size stay fixed');

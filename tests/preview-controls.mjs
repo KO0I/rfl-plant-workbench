@@ -1,0 +1,23 @@
+import assert from 'node:assert/strict';
+import {bindPreviewControls} from '../dist/flora-preview-controls.js';
+class Canvas extends EventTarget {clientHeight=420;classList={add(){},remove(){}};focus(){}setPointerCapture(){}}
+const canvas=new Canvas(),page=new EventTarget();page.hidden=false;
+let clock=100,id=0;const frames=new Map(),changes=[];
+const host={requestAnimationFrame(fn){frames.set(++id,fn);return id;},cancelAnimationFrame(id){frames.delete(id);}};
+const step=(ms=100)=>{clock+=ms;const work=[...frames.values()];frames.clear();for(const fn of work)fn(clock);};
+const emit=(type,props={})=>{const e=new Event(type,{cancelable:true});Object.assign(e,props);canvas.dispatchEvent(e);return e;};
+const controls=bindPreviewControls(canvas,{host,page,onChange:s=>changes.push(s)});
+const down=(pointerId,x,y)=>emit('pointerdown',{pointerId,clientX:x,clientY:y,pointerType:'touch',button:0});
+const move=(pointerId,x,y)=>emit('pointermove',{pointerId,clientX:x,clientY:y});
+down(1,100,100);move(1,140,120);step();assert.equal(controls.snapshot().yaw,49);assert.equal(controls.snapshot().pitch,21);
+down(2,240,120);const before=controls.snapshot();move(2,340,120);step();assert.equal(controls.snapshot().lod,before.lod-1);assert.equal(controls.snapshot().yaw,before.yaw);
+emit('pointerup',{pointerId:2});move(1,150,120);step();assert.equal(controls.snapshot().yaw,52.5,'pinch to drag has no jump');emit('pointercancel',{pointerId:1});
+const wheel=emit('wheel',{deltaY:100,deltaMode:0,ctrlKey:false});step();assert(wheel.defaultPrevented);assert.equal(controls.snapshot().lod,.8);
+emit('wheel',{deltaY:1000,deltaMode:1,ctrlKey:false});step();assert.equal(controls.snapshot().yaw,52.5);assert(!('zoom' in controls.snapshot()));
+controls.update({lod:100});step();assert.equal(controls.snapshot().lod,3);controls.update({lod:-100});step();assert.equal(controls.snapshot().lod,0);
+controls.update({autoOrbit:true});step();const yaw=controls.snapshot().yaw;step(500);assert(controls.snapshot().yaw>yaw);
+down(3,0,0);const held=controls.snapshot().yaw;step(500);assert.equal(controls.snapshot().yaw,held);emit('pointerup',{pointerId:3});step(500);assert(controls.snapshot().yaw>held);
+page.hidden=true;page.dispatchEvent(new Event('visibilitychange'));assert.equal(frames.size,0);const hiddenYaw=controls.snapshot().yaw;step(5000);assert.equal(controls.snapshot().yaw,hiddenYaw);
+page.hidden=false;page.dispatchEvent(new Event('visibilitychange'));step();assert.equal(controls.snapshot().yaw,hiddenYaw,'no hidden-tab time jump');step(500);assert(controls.snapshot().yaw>hiddenYaw);
+controls.update({autoOrbit:false});step();assert.equal(frames.size,0);controls.dispose();assert(changes.length>0);
+console.log('Drag, pinch, wheel, cancellation, auto-orbit and visibility passed');
