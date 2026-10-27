@@ -1,9 +1,24 @@
+import {generateJamWattle} from './jam-wattle.js';
+import {generateTreeFern} from './tree-fern.js';
+import {generateOlive} from './olive.js';
+import {generateGinkgo} from './ginkgo.js';
+import {generateCalamites} from './calamites.js';
+import {generateMangrove} from './mangrove.js';
+import {generateCalamophyton} from './calamophyton.js';
 import {NAMED_TREES,generateNamedTree} from './named-trees.js';
 // Distinct tree architectures. All dimensions are metres and variation is seeded.
 import {createFloraGeometry,seededRandom,meshDiagnostics} from './faceted-flora.js';
 import {foliageGeometry} from './interiors-foliage.mjs';
-export const TREE_FORMS=['evergreen','willow','palm','dragonblood',...NAMED_TREES];
+export const TREE_FORMS=['acacia-spined','jam-wattle','tree-fern','olive','evergreen','willow','palm','dragonblood','calamophyton','calamites','mangrove','ginkgo',...NAMED_TREES];
 export function generateTreeForm(recipe,seed,palette){
+ if(recipe.form==='jam-wattle')return generateJamWattle(seed,palette);
+ if(recipe.form==='acacia-spined')return generateNamedTree('acacia',seed,palette,{trunkSpines:true});
+ if(recipe.form==='tree-fern')return generateTreeFern(recipe,seed,palette);
+ if(recipe.form==='olive')return generateOlive(seed,palette);
+ if(recipe.form==='ginkgo')return generateGinkgo(seed,palette);
+ if(recipe.form==='calamites')return generateCalamites(recipe,seed,palette);
+ if(recipe.form==='mangrove')return generateMangrove(seed,palette);
+ if(recipe.form==='calamophyton')return generateCalamophyton(seed,palette);
  if(NAMED_TREES.includes(recipe.form))return generateNamedTree(recipe.form,seed,palette);
  if(!TREE_FORMS.includes(recipe.form))throw Error('Unknown tree form');
  const rng=seededRandom(seed),wood=createFloraGeometry(seed),leaves=createFloraGeometry(seed),crowns=[],groups=[];

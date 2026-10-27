@@ -1,13 +1,13 @@
 import assert from 'node:assert/strict';
 import {floraSpecies,validateSpecies} from '../dist/flora-species.js';
 import {generateSpecies,approveSpecies,verifyApproval} from '../dist/flora-authoring.js';
-import {supportsProduce,defaultProduce,PRODUCE_KINDS,produceGeometry,PRODUCE_COLORS} from '../dist/plant-produce.js';
+import {supportsProduce,stagesForSpecies,defaultProduce,PRODUCE_KINDS,produceGeometry,PRODUCE_COLORS} from '../dist/plant-produce.js';
 import {meshDiagnostics} from '../dist/faceted-flora.js';
 import {supportsSeasons,SEASONS} from '../dist/plant-seasons.js';
 for(const kind of [...PRODUCE_KINDS,'flower']){const v=produceGeometry(kind,PRODUCE_COLORS[kind]||[.9,.2,.5]);assert.equal(meshDiagnostics(v).degenerate,0);}
 for(const s of floraSpecies.filter(supportsProduce))for(const seed of s.seeds){
- const base={...s,recipe:{...s.recipe,stage:'normal',heightMeters:3}},normal=generateSpecies(base,seed);
- for(const stage of ['flowering','fruiting'])for(const produce of PRODUCE_KINDS){
+ const base={...s,recipe:{...s.recipe,stage:'normal',heightMeters:s.recipe.form==='zosteophyl'?2:3}},normal=generateSpecies(base,seed);
+ for(const stage of stagesForSpecies(s).filter(stage=>stage!=='normal'))for(const produce of PRODUCE_KINDS){
   const source={...base,recipe:{...base.recipe,stage,produce}},v=generateSpecies(source,seed);
   assert(v.mesh.vertices.length>normal.mesh.vertices.length,s.id+' has reproductive geometry');
   assert.deepEqual(v.mesh.vertices.subarray(0,normal.mesh.vertices.length),normal.mesh.vertices,'stage preserves scaled body');
@@ -15,7 +15,7 @@ for(const s of floraSpecies.filter(supportsProduce))for(const seed of s.seeds){
   assert.equal(v.diagnostics.degenerate,0);assert(v.diagnostics.triangles<12000);
   assert.deepEqual(v.mesh.vertices,generateSpecies(source,seed).mesh.vertices,'deterministic stages');
  }
- if(supportsSeasons(s))for(const season of SEASONS)generateSpecies({...s,recipe:{...s.recipe,season,stage:'fruiting',produce:'berries'}},seed);
+ if(supportsSeasons(s))for(const season of SEASONS)generateSpecies({...s,recipe:{...s.recipe,season,stage:stagesForSpecies(s).includes('fruiting')?'fruiting':'flowering',produce:'berries'}},seed);
 }
 assert.equal(defaultProduce(floraSpecies.find(s=>s.id==='tree-evergreen')),'pinecones');
 for(const id of ['xpm-cactus-low','tree-evergreen','plant-desert-rose']){

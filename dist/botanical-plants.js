@@ -1,7 +1,23 @@
+import {generateHeathWildflowers} from './heath-wildflowers.js';
+import {generateShieldFern} from './shield-fern.js';
+import {generateTussock} from './tussock.js';
+import {generateCattails} from './cattails.js';
+import {generatePineapple} from './pineapple.js';
+import {generatePrototaxiteB} from './prototaxite-b.js';
+import {generatePrototaxiteA} from './prototaxite-a.js';
+import {generateZosteophyl} from './zosteophyl.js';
 import {createFloraGeometry,seededRandom} from './faceted-flora.js';
 import {foliageGeometry} from './interiors-foliage.mjs';
-export const BOTANICAL_FORMS=['desert-rose','fern','baobab','saguaro','barrel-cactus','prickly-pear'];
+export const BOTANICAL_FORMS=['heath','wildflower-spike','wildflower-daisy','wildflower-cup','shield-fern','tussock','cattail','pineapple','prototaxite-b','prototaxite-a','zosteophyl','desert-rose','fern','baobab','saguaro','barrel-cactus','prickly-pear'];
 export function generateBotanical(recipe,seed,palette){
+ if(['heath','wildflower-spike','wildflower-daisy','wildflower-cup'].includes(recipe.form))return generateHeathWildflowers(recipe,seed,palette);
+ if(recipe.form==='shield-fern')return generateShieldFern(seed,palette);
+ if(recipe.form==='tussock')return generateTussock(recipe,seed,palette);
+ if(recipe.form==='cattail')return generateCattails(seed,palette);
+ if(recipe.form==='pineapple')return generatePineapple(seed,palette);
+ if(recipe.form==='prototaxite-b')return generatePrototaxiteB(seed,palette);
+ if(recipe.form==='prototaxite-a')return generatePrototaxiteA(seed,palette);
+ if(recipe.form==='zosteophyl')return generateZosteophyl(recipe,seed,palette);
  if(!BOTANICAL_FORMS.includes(recipe.form))throw Error('Unknown botanical form');
  const random=seededRandom(seed),solid=createFloraGeometry(seed),leaves=createFloraGeometry(seed),rows=[],groups=[],produceAnchors=[];
  const range=(a,b)=>a+(b-a)*random(),polar=(a,r,y)=>[Math.cos(a)*r,y,Math.sin(a)*r],add=(a,b)=>a.map((v,k)=>v+b[k]),phase=range(0,6.28);
