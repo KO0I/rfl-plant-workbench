@@ -1,3 +1,5 @@
+import {dustPlantMesh,plantSnowState} from './plant-snow.js';
+import {stumpMesh} from './tree-condition.js';
 import {attachProduce} from './plant-produce.js';
 import {generateXpmCactus} from './xpm-cacti.js';
 import {generateBotanical} from './botanical-plants.js';
@@ -27,11 +29,18 @@ export function generateSpecies(s,seed=s.seeds[0]){
  else if(s.recipe.kind==='growth')mesh=growFlora(s.recipe,seed,s.palette);
  else {mesh={vertices:new Float32Array(s.recipe.vertices),count:s.recipe.vertices?.length/10};}
  const framingMesh={vertices:new Float32Array(mesh.vertices),count:mesh.count};
- mesh=attachProduce(mesh,s,seed);
+ if(!['burnt','stump'].includes(s.recipe.condition))mesh=attachProduce(mesh,s,seed);
  if(s.recipe.heightMeters!==undefined){const original=meshDiagnostics(framingMesh),scale=s.recipe.heightMeters/original.dimensions[1];if(!Number.isFinite(scale)||scale<=0||scale>100)throw Error('Invalid height override');for(let i=0;i<mesh.vertices.length;i+=10)for(let k=0;k<3;k++)mesh.vertices[i+k]*=scale;for(let i=0;i<framingMesh.vertices.length;i+=10)for(let k=0;k<3;k++)framingMesh.vertices[i+k]*=scale;}
  if(s.recipe.tint){if(s.recipe.tint.length!==3||!s.recipe.tint.every(x=>Number.isFinite(x)&&x>=0&&x<=2))throw Error('Invalid tint');for(let i=0;i<mesh.vertices.length;i+=10)for(let k=0;k<3;k++)mesh.vertices[i+6+k]=Math.min(1,mesh.vertices[i+6+k]*s.recipe.tint[k]);}
  const frameDiagnostics=meshDiagnostics(framingMesh);
  if(supportsSeasons(s))mesh=applySeason(mesh,s.recipe.season||'summer',s.recipe.form);
+ if(s.recipe.condition==='burnt'){
+  mesh=applySeason(mesh,'winter');
+  for(let i=0;i<mesh.vertices.length;i+=10)for(let k=0;k<3;k++)mesh.vertices[i+6+k]*=.18;
+  mesh.leafGroups=[];mesh.produceAnchors=[];
+ }
+ if(s.recipe.condition==='stump')mesh=stumpMesh(mesh);
+ if(s.recipe.snowDusting==='dusted')mesh=dustPlantMesh(mesh,seed);
  mesh.frameDiagnostics=frameDiagnostics;
  mesh.foliage=s.rendering.foliage==='interiors-coarse-v1';
  const diagnostics=meshDiagnostics(mesh);if((diagnostics.nonFlat&&!['interiors','tree-form','botanical'].includes(s.recipe.kind))||diagnostics.degenerate)throw Error('Mesh must have nondegenerate flat-shaded triangles');
@@ -41,3 +50,13 @@ export function canonicalJSON(value){if(Array.isArray(value))return '['+value.ma
 export async function contentHash(value){const bytes=new TextEncoder().encode(canonicalJSON(value));return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)),x=>x.toString(16).padStart(2,'0')).join('');}
 export async function approveSpecies(species){const source=structuredClone(species);delete source.approval;const variants=source.seeds.map(seed=>generateSpecies(source,seed));const payload={source,variants:variants.map(v=>({seed:v.seed,vertices:Array.from(v.mesh.vertices)}))};return {...source,approval:{algorithm:'sha256',digest:await contentHash(payload),generatorVersion:1}};}
 export async function verifyApproval(species){if(!species.approval)return false;const approved=await approveSpecies(species);return species.approval.digest===approved.approval.digest&&species.approval.generatorVersion===1;}
+
+// Authoring/placement adapter. Gameplay can evaluate plantSnowState against baked
+// variant bounds before allocating an instance; no geometry generation is required there.
+export function generatePlacedSpecies(s,seed,environment,placement={}){
+ const source={...s,recipe:{...s.recipe,snowDusting:'none'}},plant=generateSpecies(source,seed);
+ const state=plantSnowState(s,environment,seed,{baseElevationMeters:placement.baseElevationMeters??0,scale:placement.scale??1,heightMeters:plant.diagnostics.bounds.max[1]});
+ if(state.buried)return null;
+ if(state.dusted)plant.mesh=dustPlantMesh(plant.mesh,seed);
+ return {...plant,snow:state};
+}
